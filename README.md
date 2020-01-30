@@ -1,5 +1,6 @@
 # VISTAFiRe
 Visual Interpretation of the SpatioTemporal Arrangement of Fire Regimes
 
-Nikki C. Inglis
-2020
+_Nikki C. Inglis
+
+_2020
