@@ -1,0 +1,238 @@
+---
+output: html_document
+css: markdown_CSS.css
+---
+
+<style type="text/css">
+.main-container {
+  max-width: 1800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+```{r, out.width = "300px", echo=F, fig.align='center'}
+knitr::include_graphics("data/ncstate-brick-4x1-red-rgb.svg")
+knitr::include_graphics("data/cgaWhite.png")
+```
+_Nikki C. Inglis_   
+&nbsp;
+_ncinglis@ncsu.edu_   
+&nbsp;
+
+  
+# Explore the history of fire in Big Cypress National Preserve and Everglades National Park  
+
+_On the charts below, click on fires of each type (human-caused wildfires, natural wildires, prescribed burns and mutual aid responses) to highlight historical trends and patterns on annual and monthly temporal scales. Click the legend labels to toggle fire types on and off._
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(ggthemes)
+library(scales)
+library(maps)
+library(mapproj)
+library(sp)
+library(rgdal)
+library(spatialEco)
+library(tidyverse)
+library(sf)
+library(plotly)
+library(Cairo)
+library(ggmap)
+library(leaflet)
+library(crosstalk)
+library(ggplot2)
+library(ggthemes)
+library(scales)
+library(maps)
+library(mapproj)
+library(sp)
+library(rgdal)
+library(spatialEco)
+library(tidyverse)
+library(sf)
+library(plotly)
+library(Cairo)
+library(ggspatial)
+library(leaflet)
+library(lubridate)
+library(rmapshaper)
+library(gridExtra)
+library(RColorBrewer)
+
+#Read in WFMI 
+fires<-readOGR("data/all_fires_cost.shp")
+
+everWFMI<-read.csv("data/ever_dates.csv", stringsAsFactors = F)
+bicyWFMI<-read.csv("data/BICY_dates.csv", stringsAsFactors = F)
+
+WFMI<-rbind(everWFMI, bicyWFMI)
+
+
+fires<-merge(fires, WFMI, by.x = "FireID", by.y = "FireId", all.x= T)
+
+
+fires<-subset(fires, GISAcres>1)
+fires<-spTransform(fires, '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
+
+fires<-st_as_sf(fires)
+fires<-ms_simplify(as(fires, "Spatial"), keep_shapes=TRUE, keep = 0.01) %>% st_as_sf()
+
+
+fires$StartDate<-as.character(fires$StartDate)
+fires$ContrDate<-as.character(fires$ContrDate)
+fires$StartDate<-as.Date(fires$StartDate, format="%Y%m%d", origin="1970-01-01")
+fires$ContrDate<-as.Date(fires$ContrDate, format="%Y%m%d", origin="1970-01-01")
+fires$duration<-difftime(fires$ContrDate, fires$StartDate, units="days")
+fires$plot_date<-as.Date(fires$StartDate, format = "%Y%m%d")
+fires$plot_date<-as.Date(format(fires$plot_date,"2017-%m-%d"))
+fires$week <- floor_date(fires$plot_date, "week")
+
+
+
+fires$NEWCAT<-case_when(fires$FireTypePr == 48 ~ "Prescribed Fire",
+                        fires$FireTypePr == 15 | fires$FireTypePr == 16 & is.na(fires$FIRE_NAME) == T ~ "Mutual aid",
+                        fires$FireCause == 'Human' ~ "Human-caused wildfire",
+                        fires$FireCause == 'Natural'  ~ "Natural wildfire", TRUE ~ "other")
+
+fires<-fires[fires$NEWCAT!="other",]
+pal<-c("#FF5733", "#d397fc", "#ffff00", "#56B4E9")
+comp<-c('#33ffc2', '#fce897', '#ff00ff', '#e98756')
+names(comp)<-c("1", "2", "3", "4")
+
+```
+
+```{r first, echo=F, warning=F, message=F, out.width="100%", fig.height=10}
+pal<-c("#FF5733", "#d397fc", "#ffff00", "#56B4E9")
+n <- highlight_key(fires, ~NEWCAT)
+p<-ggplot(n, aes(y=FIRE_YEAR)) +
+           geom_hline(yintercept = seq(1980, 2017, by = 1), color = "gray", size = 0.04) +
+           scale_size_area(max_size = 15, guide = FALSE) +
+           scale_x_date(date_breaks = "months", date_labels = "%b") +
+           scale_y_reverse(limits = c(2017,1980), breaks = c(2015,2010,2005,2000,1995, 1990, 1985, 1980)) +
+           xlab("") +
+           ylab("") +
+           theme(plot.background = element_rect(fill='gray20'), 
+        panel.background = element_rect(fill='gray20'), 
+        axis.text.y = element_text(colour='gray98', size=16),
+        axis.text.x = element_text(colour='gray98', size=10),
+        panel.grid.major = element_blank(),   
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_line(size=1.2, color="gray"),
+        legend.background = element_rect(fill="gray20"),
+        legend.title = element_blank(),
+        legend.text = element_text(colour="gray98"),
+        axis.ticks.x = element_line(colour='gray98'))  +
+           geom_point(aes(size = ContrAcres*2, x = plot_date, color = NEWCAT, group=1, text=paste('Name:', FIRE_NAME, '<br>Park:', UnitName.x, '<br>Type:', NEWCAT, '<br>Date:', format(StartDate, "%b %d %Y"), '<br>Duration:', duration, "days", '<br>WFU?:', ifelse(FireTypePr==14 | FireTypePr==49, "Yes", "No"), "<br>Size:", format(ContrAcres, big.mark = "," , digits = 1), "acres")), alpha=0.5) +
+           scale_color_manual(values=pal) +
+  guides(colour = guide_legend(override.aes = list(size=10)))
+
+
+p2<- ggplot(n, aes(x=plot_date, fill = NEWCAT)) + 
+  geom_histogram(alpha=0.7, color=NA, bins=52, position="identity") +
+  scale_x_date(date_breaks = "months", date_labels = "%b") +
+  scale_y_continuous(position = "right") +
+  theme(plot.background = element_rect(fill='gray20'), 
+        panel.background = element_rect(fill='gray20'), 
+        axis.text.y = element_text(colour='gray98', size=14),
+        axis.text.x = element_text(colour='gray98', size=10),
+        panel.grid.major = element_blank(),   
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_line(size=1.2, color="gray"),
+        axis.ticks.x = element_line(colour='gray98'),
+        plot.margin=unit(c(0,2,0,0), 'cm'),
+        legend.position='none',
+        axis.title.y = element_text(colour='gray98', size=14),
+        plot.title  = element_text(colour='gray98', size=20))+ 
+  xlab("") +
+  ylab("Fire occurences") +
+  scale_fill_manual(values=pal)
+
+
+
+p3<-ggplot(n, aes(x=plot_date, y=ContrAcres, fill = NEWCAT)) + 
+  stat_summary(aes(x=week), fun.y="mean", geom="bar", alpha=0.7) +
+  scale_x_date(date_breaks = "months", date_labels = "%b") +
+  scale_y_continuous(labels=function(x) format(x, big.mark = ",", scientific = FALSE)) +
+  theme(plot.background = element_rect(fill='gray20'), 
+        panel.background = element_rect(fill='gray20'), 
+        axis.text.y = element_text(colour='gray98', size=14),
+        axis.text.x = element_text(colour='gray98', size=10),
+        panel.grid.major = element_blank(),   
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_line(size=1.2, color="gray"),
+        axis.ticks.x = element_line(colour='gray98'),
+        plot.margin=unit(c(0,2,0,0), 'cm'),
+        legend.position='none',
+        axis.title.y = element_text(colour='gray98', size=14)) +
+  xlab("") +
+  ylab("Average acres burned") +
+  scale_fill_manual(values=pal)
+
+
+pg<-ggplotly(p, tooltip="text", legendgroup='1')
+p2g<-ggplotly(p2, tooltip=FALSE, legendgroup='1')
+p3g<-ggplotly(p3, tooltip=FALSE, legendgroup='1')
+
+subplot(pg %>% layout(showlegend=T),
+          subplot(p2g,p3g, margin=c(.02,.1,.1,.1), titleY=T), titleY=T, 
+   nrows = 2, heights=c(.7,.3), which_layout=1) %>% 
+    highlight("plotly_click")
+
+
+#subplot(pg, subplot(p2g,p3g, margin=c(.02,.1,.1,.1), titleY=T), nrows = 2, heights=c(.7,.3), margin=c(0,0,0,0.1),titleY=T) %>% highlight("plotly_click")
+
+```
+
+
+
+&nbsp;
+
+
+
+# Explore the spatial dynamics of Everglades and Big Cypress fires
+_The chart on the left is the same as the one at the top of this page, with one difference. Highlighting on this chart will highlight the corresponding mark on the map on the right, showing where the fire occured. First, select a color with the brush tool located above the map. Then, select a time period of fires on the left. Choose a new color to highlight multiple periods of interest. You can also select a fire on the map by clicking and holding on the fire's footprint. Change this brush color with the tool located at the very top of the chart. _ 
+
+```{r mapbox, echo=F, warning=F, message=F, out.width="100%", fig.height=16, fig.align="center"}
+Sys.setenv('MAPBOX_TOKEN' = 'pk.eyJ1Ijoibmlra2lpIiwiYSI6ImNrNDdjMHVrNjB0am4za25uMnpmaDQ4dWsifQ.Y8FjR-KmYKCabgdcYyfWAg')
+
+#firesb<-fires[fires$FireName != "LOGGERHEAD" & fires$FireName!= "CRACKUP #1" & fires$FireName!= "ROBERTS" & fires$FireName != "GUM SLGH 1" & fires$FireName != "BLOCKSDOF" & fires$FireName != "ROG NE",]
+share<-SharedData$new(fires)
+comp<-c('#33ffc2', '#fce897', '#ff00ff', '#e98756')
+names(comp)<-c("1", "2", "3", "4")
+
+bscols(ggplotly(ggplot(share, aes(y=FIRE_YEAR)) +
+           geom_hline(yintercept = seq(1980, 2017, by = 1), color = "gray", size = 0.04) +
+           scale_size_area(max_size = 15, guide = FALSE) +
+           scale_x_date(date_breaks = "months", date_labels = "%b") +
+           scale_y_reverse(limits = c(2017,1980), breaks = c(2015,2010,2005,2000,1995, 1990, 1985, 1980)) +
+           xlab("") +
+           ylab("") +
+           theme(plot.background = element_rect(fill='gray20'), 
+                 panel.background = element_rect(fill='gray20'), 
+                 axis.text.y = element_text(colour='gray98', size=16),
+                 axis.text.x = element_text(colour='gray98', size=10),
+                 panel.grid.major = element_blank(),   
+                 panel.grid.minor = element_blank(),
+                 panel.grid.major.y = element_line(size=1.2, color="gray"),
+                 legend.position='none',
+                 axis.ticks.x = element_line(colour='gray98')) +
+           geom_point(aes(size = ContrAcres*2, x = plot_date, color = NEWCAT, group=1, text=paste('Name:', FIRE_NAME, '<br>Park:', UnitName.x, '<br>Type:', NEWCAT, '<br>Date:', format(StartDate, "%b %d %Y"), '<br>Duration:', duration, "days", '<br>WFU?:', ifelse(FireTypePr==14 | FireTypePr==49, "Yes", "No"), "<br>Size:", format(ContrAcres, big.mark = ",", digits = 1), "acres")), alpha=0.5) +
+           scale_color_manual(values=pal), tooltip="text", height=800) %>%
+  highlight("plotly_selected", persistent = TRUE, dynamic = TRUE, color=c('#e98756', '#ff00ff', '#33ffc2', '#fce897')),
+plot_mapbox(share, color=~NEWCAT, colors=pal,
+            alpha=0.7, span = I(1), linetype = I("dash"),
+            text=~paste('Name:', FIRE_NAME, '<br>Park:', UnitName.x, '<br>Type:', NEWCAT, '<br>Date:', format(StartDate, "%b %d %Y"), '<br>Duration:', duration, "days", '<br>WFU?:', ifelse(FireTypePr==14 | FireTypePr==49, "Yes", "No"), "<br>Size:", format(ContrAcres, big.mark = ",", digits = 1), "acres"), hoverinfo="text", height=1000) %>% 
+  layout(plot_bgcolor = '#333333', paper_bgcolor = '#333333', mapbox = list(style = 'dark', zoom=7, 
+  center =list(lat =25.683891,lon = -80.872782))) %>% highlight(dynamic = TRUE, persistent=T, color=comp),
+widths=c(12))
+  
+```
+
+### Acknowledgements
+
+_Thank you to Peter Aldous for the original inspiration for this visualization. We thank Justin Shedd of the Region 1 Fire Management Office of the National Park Service for collaborating on the development of the tool. Research supported by NPS-CESU Agreement "Geospatial Analytics for the Fire Management Offices of the National Capital, Northeast, and Southeast Regions of the National Park Service."_
+
+_Principal Investigator: Dr. Jelena Vukomanovic, Center for Geospatial Analytics and Department of Parks, Recreation and Tourism Management, North Carolina State University._
