@@ -125,7 +125,7 @@ p<-ggplot(n, aes(y=FIRE_YEAR)) +
         legend.title = element_blank(),
         legend.text = element_text(colour="gray98"),
         axis.ticks.x = element_line(colour='gray98'))  +
-           geom_point(aes(size = ContrAcres*2, x = plot_date, color = NEWCAT, group=1, text=paste('Name:', FIRE_NAME, '<br>Park:', UnitName.x, '<br>Type:', NEWCAT, '<br>Date:', format(StartDate, "%b %d %Y"), '<br>Duration:', duration, "days", '<br>WFU?:', ifelse(FireTypePr==14 | FireTypePr==49, "Yes", "No"), "<br>Size:", format(ContrAcres, big.mark = "," , digits = 1), "acres")), alpha=0.5) +
+           geom_point(aes(size = ContrAcres*2, x = plot_date, color = NEWCAT, group=1, text=paste('Name:', FIRE_NAME, '<br>Park:', UnitName.x, '<br>Type:', NEWCAT, '<br>Date:', format(StartDate, "%b %d %Y"), '<br>Duration:', duration, "days", '<br>WFU?:', ifelse(FireTypePr==14 | FireTypePr==49, "Yes", "No"), "<br>Size:", format(ContrAcres, big.mark = "," , digits = 0, scientific = F), "acres")), alpha=0.5) +
            scale_color_manual(values=pal) +
   guides(colour = guide_legend(override.aes = list(size=10)))
 
@@ -219,12 +219,12 @@ bscols(ggplotly(ggplot(share, aes(y=FIRE_YEAR)) +
                  panel.grid.major.y = element_line(size=1.2, color="gray"),
                  legend.position='none',
                  axis.ticks.x = element_line(colour='gray98')) +
-           geom_point(aes(size = ContrAcres*2, x = plot_date, color = NEWCAT, group=1, text=paste('Name:', FIRE_NAME, '<br>Park:', UnitName.x, '<br>Type:', NEWCAT, '<br>Date:', format(StartDate, "%b %d %Y"), '<br>Duration:', duration, "days", '<br>WFU?:', ifelse(FireTypePr==14 | FireTypePr==49, "Yes", "No"), "<br>Size:", format(ContrAcres, big.mark = ",", digits = 1), "acres")), alpha=0.5) +
+           geom_point(aes(size = ContrAcres*2, x = plot_date, color = NEWCAT, group=1, text=paste('Name:', FIRE_NAME, '<br>Park:', UnitName.x, '<br>Type:', NEWCAT, '<br>Date:', format(StartDate, "%b %d %Y"), '<br>Duration:', duration, "days", '<br>WFU?:', ifelse(FireTypePr==14 | FireTypePr==49, "Yes", "No"), "<br>Size:", format(ContrAcres, big.mark = ",", digits = 0, scientific = F), "acres")), alpha=0.5) +
            scale_color_manual(values=pal), tooltip="text", height=800) %>%
   highlight("plotly_selected", persistent = TRUE, dynamic = TRUE, color=c('#e98756', '#ff00ff', '#33ffc2', '#fce897')),
 plot_mapbox(share, color=~NEWCAT, colors=pal,
             alpha=0.7, span = I(1), linetype = I("dash"),
-            text=~paste('Name:', FIRE_NAME, '<br>Park:', UnitName.x, '<br>Type:', NEWCAT, '<br>Date:', format(StartDate, "%b %d %Y"), '<br>Duration:', duration, "days", '<br>WFU?:', ifelse(FireTypePr==14 | FireTypePr==49, "Yes", "No"), "<br>Size:", format(ContrAcres, big.mark = ",", digits = 1), "acres"), hoverinfo="text", height=1000) %>% 
+            text=~paste('Name:', FIRE_NAME, '<br>Park:', UnitName.x, '<br>Type:', NEWCAT, '<br>Date:', format(StartDate, "%b %d %Y"), '<br>Duration:', duration, "days", '<br>WFU?:', ifelse(FireTypePr==14 | FireTypePr==49, "Yes", "No"), "<br>Size:", format(ContrAcres, big.mark = ",", digits = 0, scientific = F), "acres"), hoverinfo="text", height=1000) %>% 
   layout(plot_bgcolor = '#333333', paper_bgcolor = '#333333', mapbox = list(style = 'dark', zoom=7, 
   center =list(lat =25.683891,lon = -80.872782))) %>% highlight(dynamic = TRUE, persistent=T, color=comp),
 widths=c(12))
