@@ -11,6 +11,7 @@ It is based on fire history visualizations documented [here](https://buzzfeednew
 
 
 ### Acknowledgements
-We thank Justin Shedd of the Region 1 Fire Management Office of the National Park Service for collaborating on the development of the geovisualization tool. Research supported by NPS-CESU Agreement "Geospatial Analytics for the Fire Management Offices of the National Capital, Northeast, and Southeast Regions of the National Park Service."
-Principal Investigator: Dr. Jelena Vukomanovic, Center for Geospatial Analytics and Department of Parks, Recreation and Tourism Management, North Carolina State University
+We thank Justin Shedd of the Region 1 Fire Management Office of the National Park Service for collaborating on the development of the geovisualization tool. Research supported by NPS-CESU Agreement "Geospatial Analytics for the Fire Management Offices of the National Capital, Northeast, and Southeast Regions of the National Park Service." 
+
+*Principal Investigator:* Dr. Jelena Vukomanovic, Center for Geospatial Analytics and Department of Parks, Recreation and Tourism Management, North Carolina State University
 
