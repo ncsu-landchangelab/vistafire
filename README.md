@@ -7,7 +7,7 @@ VISTAFiRe is a visual analytics tool for exploring spatiotemporal dynamics in fi
 It is based on fire history visualizations documented [here](https://buzzfeednews.github.io/2018-07-wildfire-trends/), crafted by Buzzfeed News journalist [Peter Aldhous](https://github.com/paldhous) in 2018. 
 
 
-[Launch visualization](ncsu-landchangelab.github.io/vistafire.html) 
+[Launch visualization](https://ncsu-landchangelab.github.io/vistafire/vistafire.html) 
 
 
 ### Acknowledgements
